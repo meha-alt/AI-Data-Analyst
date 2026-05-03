@@ -1,6 +1,5 @@
 streamlit
 pandas
-numpy
 ydata-profiling
 openpyxl
 python-dotenv
