@@ -4,9 +4,4 @@ This project is an AI-powered data analysis system designed to transform raw Exc
 The system bridges the gap between raw data and meaningful business understanding, making it useful for analysts, students, and decision-makers.
 
 Tech Stack
-Python
-Pandas, NumPy
-Ydata-profiling
-LLM Integration (for insights)
-Streamlit (UI)
-Render (Deployment)
+Python,Pandas, NumPy,Ydata-profiling,LLM Integration (for insights),Streamlit (UI),Render (Deployment)
