@@ -56,11 +56,12 @@ if file is not None:
     
     if "collection" not in st.session_state or st.session_state.get("file_name") != file.name:
         with st.spinner("Initializing AI analyst..."):
-            collection = main4(st.session_state.profile_report, len(df), st.session_state.user_id)
+            collection, vectorizer = main4(st.session_state.profile_report, len(df), st.session_state.user_id)
             if collection is None:
                 st.error("Failed to initialize collection. Check main4() — it must return a ChromaDB collection.")
                 st.stop()
             st.session_state.collection = collection
+            st.session_state.vectorizer = vectorizer
             st.session_state.file_name = file.name  
     
     if "insights" in st.session_state and st.session_state.get("file_name") == file.name:
