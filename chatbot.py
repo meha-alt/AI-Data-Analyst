@@ -46,9 +46,11 @@ def chatbot(collection):
             "content": query
         })
           
+        query_embedding = st.session_state.vectorizer.transform([query]).toarray()[0]
         results = st.session_state.collection.query(
-            query_texts=[query],
-            n_results=3 )
+            query_embeddings=[query_embedding.tolist()],
+            n_results=3
+        )
           
         context = "\n".join(
             results["documents"][0])
