@@ -1,5 +1,5 @@
 from ydata_profiling import ProfileReport
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import chromadb
 import json
 
@@ -15,7 +15,7 @@ def main4(profile,l,user_id):
     # create fresh collection
     collection = client.get_or_create_collection(name=collection_name)
     
-    model = SentenceTransformer('all-MiniLM-L6-v2') # embedding model
+    vectorizer = TfidfVectorizer() # embedding model
     
     profile=profile.to_json()
     profile_dict = json.loads(profile)
@@ -78,7 +78,7 @@ def main4(profile,l,user_id):
                 corr_count += 1
 
     # Batch Embed and Add to Chroma
-    embeddings = model.encode(documents)
+    embeddings = vectorizer.fit_transform(documents).toarray()
     collection.add(
         documents=documents,
         embeddings=[e.tolist() for e in embeddings],
@@ -86,4 +86,4 @@ def main4(profile,l,user_id):
         ids=ids
     )
     
-    return collection
+    return collection,vectorizer
