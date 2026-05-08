@@ -8,4 +8,4 @@ groq
 scikit-learn
 kmodes
 chromadb
-sentence-transformers
+
