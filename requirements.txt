@@ -4,3 +4,7 @@ ydata-profiling
 openpyxl
 python-dotenv
 groq
+scikit-learn
+kmodes
+chromadb
+sentence-transformers
