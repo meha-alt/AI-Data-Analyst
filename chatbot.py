@@ -1,16 +1,6 @@
 import streamlit as st
-from groq import Groq
-import os
-from dotenv import load_dotenv
 
-
-
-load_dotenv()
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=GROQ_API_KEY)
-
-def chatbot(collection):
+def chatbot(collection, cohere_client,groq_client):
     st.header("Chat with AI Analyst")
 
     if "collection" not in st.session_state:
@@ -28,14 +18,7 @@ def chatbot(collection):
        )
     
     st.caption("""
-    Ask about:
-    • data quality issues  
-    • missing values  
-    • correlations  
-    • preprocessing suggestions  
-    • feature engineering ideas  
-    • skewness and outliers  
-    • model readiness""")
+    Ask about:• data quality issues  • missing values  • correlations  • preprocessing suggestions  • feature engineering ideas  • skewness and outliers  • model readiness""")
     
     if query:
         with st.chat_message("user"):
@@ -46,9 +29,10 @@ def chatbot(collection):
             "content": query
         })
           
-        query_embedding = st.session_state.vectorizer.transform([query]).toarray()[0]
+        query_embedding = cohere_client.embed(texts=[query],model="embed-english-v3.0",input_type="search_query").embeddings
+        
         results = st.session_state.collection.query(
-            query_embeddings=[query_embedding.tolist()],
+            query_embeddings=query_embedding,
             n_results=3
         )
           
@@ -74,7 +58,7 @@ def chatbot(collection):
           )
 
         
-        response = client.chat.completions.create(
+        response = groq_client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=messages,
             temperature=0.2
