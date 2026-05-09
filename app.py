@@ -50,7 +50,7 @@ if file is None or file.name != st.session_state.get("file_name"):
 if file is not None:
     if "df" in st.session_state and st.session_state.get("file_name") == file.name:
         df = st.session_state.df
-        st.dataframe(df)
+        st.dataframe(df.head(20))
     else:
         if file.name.endswith('.csv'):
             df = pd.read_csv(file)
@@ -58,7 +58,7 @@ if file is not None:
             df = pd.read_excel(file)
         st.session_state.df = df
         st.session_state.file_name = file.name
-        st.dataframe(df)
+        st.dataframe(df.head(20))
 
     # Load or generate profile report
     if "profile_report" in st.session_state and st.session_state.get("file_name") == file.name:
