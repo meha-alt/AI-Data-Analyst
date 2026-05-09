@@ -1,10 +1,9 @@
 from ydata_profiling import ProfileReport
-from sklearn.feature_extraction.text import TfidfVectorizer
 import chromadb
 import json
 
 
-def main4(profile,l,user_id):
+def main4(profile,l,user_id,cohere_client):
     client = chromadb.Client()
     collection_name = f"profile_{user_id}"  # unique per user session
     try:
@@ -14,8 +13,6 @@ def main4(profile,l,user_id):
       pass
     # create fresh collection
     collection = client.get_or_create_collection(name=collection_name)
-    
-    vectorizer = TfidfVectorizer() # embedding model
     
     profile=profile.to_json()
     profile_dict = json.loads(profile)
@@ -40,9 +37,11 @@ def main4(profile,l,user_id):
     variables = profile_dict.get("variables", {})
     for col, details in variables.items():
         v_type = details.get('type')
-        # Main focus on skewness and entropy
         text = f"Variable '{col}' ({v_type}). "
-        
+        n_unique = details.get('n_unique', 0)
+        p_unique = details.get('p_unique', 0) # Percentage unique
+        text += f"Has {n_unique} unique values ({p_unique:.1%}). "
+        # Main focus on skewness and entropy
         if v_type == "Numeric":
             skew = details.get('skewness', 0)
             text += f"Mean: {details.get('mean'):.2f}, Skewness: {skew:.2f}. "
@@ -51,7 +50,11 @@ def main4(profile,l,user_id):
         
         if details.get('p_missing', 0) > 0:
             text += f"Warning: {details.get('p_missing'):.1%} missing data."
-
+        
+        p_duplicates = details.get('p_duplicates', 0)
+        if p_duplicates > 0.5: # If more than 50% is repeated
+            text += f"High Redundancy: {p_duplicates:.1%} are duplicate entries. "
+        
         documents.append(text)
         metadatas.append({"category": "variable_detail", "column": col})
         ids.append(f"var_{col}")
@@ -76,14 +79,38 @@ def main4(profile,l,user_id):
                 metadatas.append({"category": "correlation", "column": f"{col1}_{col2}"})
                 ids.append(f"corr_{corr_count}")
                 corr_count += 1
+    
+    correlations2 = profile_dict.get("correlations", {}).get("pearson", {})
+    for col1, targets in correlations2.items():
+        for col2, val in targets.items():
+            if col1 < col2 and abs(val) > 0.7:  # col1 < col2 ensures we don't duplicate pairs 
+                text = f"Strong Linear Relationship: {col1} and {col2} have a Pearson correlation of {val:.2f}."
+                documents.append(text)
+                metadatas.append({"category": "correlation", "column": f"{col1}_{col2}"})
+                ids.append(f"corr_pearson_{corr_count}")
+                corr_count += 1
+    
+    correlations3 = profile_dict.get("correlations", {}).get("spearman", {})
+    for col1, targets in correlations3.items():
+        for col2, val in targets.items():
+            if col1 < col2 and abs(val) > 0.7:  # col1 < col2 ensures we don't duplicate pairs 
+                text = f"Strong Monotonic Relationship: {col1} and {col2} have a Spearman correlation of {val:.2f}."
+                metadatas.append({"category": "correlation", "column": f"{col1}_{col2}"})
+                ids.append(f"corr_spearman_{corr_count}")
+                corr_count += 1
 
     # Batch Embed and Add to Chroma
-    embeddings = vectorizer.fit_transform(documents).toarray()
+    response = cohere_client.embed(
+    texts=documents,
+    model="embed-english-v3.0",
+    input_type="search_document")
+    
+    embeddings = response.embeddings
     collection.add(
         documents=documents,
-        embeddings=[e.tolist() for e in embeddings],
+        embeddings=embeddings,
         metadatas=metadatas,
         ids=ids
     )
     
-    return collection,vectorizer
+    return collection
